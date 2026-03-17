@@ -25,7 +25,7 @@ def get_predictor() -> Predictor:
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Violence Detection Inference API",
+        title="Violence Detection API",
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",

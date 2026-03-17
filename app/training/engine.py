@@ -143,7 +143,7 @@ def fit(
             }
             best_model_path = output_dir / "best_model.safetensors"
 
-            # meta inside safetensors keeps loading simple, без extra guessing later.
+            # Keep the runtime metadata next to weights in the same file.
             save_model_bundle(best_model_path, model.state_dict(), metadata)
             best_summary = {
                 "model_path": str(best_model_path),

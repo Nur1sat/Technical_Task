@@ -1,28 +1,24 @@
 # Violence Video Classifier
 
-PyTorch pipeline for binary video classification: `violence` vs `nonviolence`.
+Тестовый проект на `PyTorch` для бинарной классификации видео: `violence` и `nonviolence`.
 
-Задача закрывается так:
-- train/fine-tune предобученную video model на Kaggle dataset `real-life-violence-situations-dataset`
-- сохранить лучший чекпоинт в формате `.safetensors`
-- проверить качество на validation videos
-- прогнать 3-5 real videos from internet через отдельный evaluation script
-- при желании поднять маленький `FastAPI` inference API для demo
+В репозитории есть:
+- подготовка `train.csv` и `val.csv` из набора видео;
+- обучение модели на базе `torchvision` video backbone;
+- сохранение лучшего чекпоинта в `.safetensors`;
+- валидация на `val`-манифесте;
+- отдельный скрипт для проверки на внешних видео;
+- простой `FastAPI`-эндпоинт для демонстрации инференса.
 
-## What is inside
+## Что внутри
 
-- `scripts/prepare_dataset.py`:
-  builds `train.csv` / `val.csv` manifests
-- `scripts/train.py`:
-  train/fine-tune pipeline with `r3d_18` backbone by default
-- `scripts/evaluate.py`:
-  validation metrics for saved `.safetensors` model
-- `scripts/evaluate_real_videos.py`:
-  runs inference on 3-5 external videos and saves JSON/CSV report
-- `app/api/main.py`:
-  small FastAPI layer for upload-based inference
+- `scripts/prepare_dataset.py` - собирает манифесты из `data/raw`;
+- `scripts/train.py` - запускает обучение и сохраняет артефакты;
+- `scripts/evaluate.py` - считает метрики на валидации;
+- `scripts/evaluate_real_videos.py` - прогоняет модель на внешних видео;
+- `app/api/main.py` - API для загрузки видео и получения предсказания.
 
-## Recommended setup
+## Быстрый старт
 
 ```bash
 python3 -m venv .venv
@@ -30,25 +26,23 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-## Dataset structure
+## Данные
 
-Repo does not bundle Kaggle videos because dataset is large.
-
-Expected raw data location:
+В репозитории нет самого датасета, потому что видеофайлы большие. Ожидаемая структура:
 
 ```text
 data/raw/
-  train/                  # optional, if dataset already has split
+  train/
     Violence/
     NonViolence/
-  val/                    # optional
+  val/
     Violence/
     NonViolence/
 ```
 
-If your downloaded dataset has no `train/val` folders, script will do stratified split automatically.
+Если в исходном наборе нет готового `train/val`, скрипт сам сделает стратифицированный split.
 
-## 1. Build manifests
+## Подготовка манифестов
 
 ```bash
 python3 scripts/prepare_dataset.py \
@@ -57,30 +51,25 @@ python3 scripts/prepare_dataset.py \
   --val-ratio 0.2
 ```
 
-Output:
+После этого появятся:
 - `data/manifests/train.csv`
 - `data/manifests/val.csv`
 
-## 2. Train model
+## Обучение
 
-Default config lives in `configs/baseline.json`.
+Базовая конфигурация лежит в `configs/baseline.json`.
 
 ```bash
 python3 scripts/train.py --config configs/baseline.json
 ```
 
-Best model is saved to:
-
-```text
-artifacts/run_r3d18/best_model.safetensors
-```
-
-Also saved:
+Основные артефакты:
+- `artifacts/run_r3d18/best_model.safetensors`
 - `artifacts/run_r3d18/history.json`
 - `artifacts/run_r3d18/training_summary.json`
 - `artifacts/run_r3d18/used_config.json`
 
-## 3. Evaluate on validation set
+## Валидация
 
 ```bash
 python3 scripts/evaluate.py \
@@ -88,28 +77,24 @@ python3 scripts/evaluate.py \
   --manifest data/manifests/val.csv
 ```
 
-Validation report is saved to:
+Отчет сохраняется в:
 
 ```text
 artifacts/reports/validation_report.json
 ```
 
-## 4. Evaluate on 3-5 real internet videos
+## Проверка на внешних видео
 
-Put extra videos here:
+Дополнительные видео можно положить в `data/external_videos/`.
 
-```text
-data/external_videos/
-```
-
-If you want auto-accuracy on those clips, name them like:
+Если нужно автоматически посчитать accuracy по именам файлов, удобно использовать такой формат:
 
 ```text
 violence__street_fight_01.mp4
 nonviolence__people_walking_01.mp4
 ```
 
-Then run:
+Запуск:
 
 ```bash
 python3 scripts/evaluate_real_videos.py \
@@ -117,40 +102,37 @@ python3 scripts/evaluate_real_videos.py \
   --input-dir data/external_videos
 ```
 
-Outputs:
+Скрипт сохраняет:
 - `artifacts/reports/real_videos.json`
 - `artifacts/reports/real_videos.csv`
 - `artifacts/reports/real_videos_summary.json`
 
-## 5. Optional FastAPI demo
+## API
 
 ```bash
 MODEL_PATH=artifacts/run_r3d18/best_model.safetensors \
 uvicorn app.api.main:app --reload
 ```
 
-Open:
+Swagger:
 - `http://127.0.0.1:8000/docs`
 
-## Model choice
+## Почему выбран `r3d_18`
 
-Default backbone is `torchvision` `r3d_18`:
-- lightweight enough for a clean baseline
-- pretrained weights are available
-- good fit for short violence / non-violence clips
+По умолчанию используется `torchvision r3d_18`.
 
-You can swap backbone in config to:
+Причины:
+- для видео это нормальный стартовый backbone;
+- есть pretrained weights;
+- модель не слишком тяжелая для базового эксперимента;
+- ее проще быстро обучить и потом проверить на inference.
+
+При необходимости можно переключить backbone в конфиге на:
 - `mc3_18`
 - `r2plus1d_18`
 
-## Notes
+## Примечания
 
-- `.safetensors` is used for final checkpoint export, as requested in the task.
-- Current repo includes training/evaluation code and report pipeline.
-- Final `85%+ accuracy` depends on real training run with dataset, pretrained weights download and available compute.
-- For a stronger run on GPU, first try:
-  increase `epochs` to `15-20`
-- For a stronger run on GPU, second try:
-  set `batch_size` to the highest value your VRAM allows
-- For a stronger run on GPU, third try:
-  compare `r3d_18` vs `r2plus1d_18`
+- Экспорт в `.safetensors` оставлен как основной формат чекпоинта.
+- Итоговая accuracy зависит от реального запуска обучения на полном датасете.
+- Чтобы добрать качество на GPU, в первую очередь есть смысл попробовать больше `epochs`, увеличить `batch_size` и сравнить `r3d_18` с `r2plus1d_18`.

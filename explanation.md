@@ -1,93 +1,62 @@
 # Explanation
 
-Сделал clean project под задачу `violence / nonviolence video classification`.
+## Что сделано
 
-## Что я собрал
+Собран рабочий пайплайн под задачу `violence / nonviolence video classification`.
 
-- `prepare_dataset.py`
-  сканирует raw videos и делает `train.csv` / `val.csv`
-- `train.py`
-  обучает или fine-tune video model на `PyTorch`
-- `evaluate.py`
-  считает метрики на validation set
-- `evaluate_real_videos.py`
-  гоняет 3-5 real videos и делает reports
-- `FastAPI` demo
-  чтобы можно было быстро показать inference через upload
+В проекте есть:
+- подготовка манифестов из исходных видео;
+- обучение модели на `PyTorch`;
+- сохранение лучшего чекпоинта в `.safetensors`;
+- валидация на `val`-выборке;
+- отдельная проверка на внешних видео;
+- минимальный `FastAPI` API для демонстрации.
 
-## Почему такой стек
+## Почему выбран такой вариант
 
-Я взял `torchvision r3d_18` как default backbone.
+В качестве базовой модели взят `torchvision r3d_18`.
 
-Причина simple:
-- model already made for video
-- легче и чище как baseline
-- pretrained weights help to reach target faster
-- код получается compact и easy to explain
+Причины простые:
+- это готовая архитектура именно для видео;
+- есть pretrained weights;
+- модель подходит для базового эксперимента без слишком тяжелой инфраструктуры;
+- ее удобно использовать как стартовую точку и потом сравнивать с `mc3_18` или `r2plus1d_18`.
 
-## Как работает pipeline
+## Как устроен пайплайн
 
-1. Raw dataset кладется в `data/raw`
-2. Скрипт делает manifests
-3. Dataset loader читает видео через `OpenCV`
-4. Из каждого видео берется clip фиксированной длины
-5. Clip нормализуется и идет в model
-6. Во время train сохраняется best checkpoint в `.safetensors`
-7. Потом этот же checkpoint идет на validation и на real internet videos
+1. Видео читаются из `data/raw`.
+2. `prepare_dataset.py` собирает `train.csv` и `val.csv`.
+3. `ViolenceVideoDataset` загружает кадры через `OpenCV`.
+4. Из видео формируется клип фиксированной длины.
+5. Клип нормализуется и передается в модель.
+6. Во время обучения сохраняется лучший чекпоинт.
+7. Тот же чекпоинт используется для валидации и для внешних видео.
 
 ## Почему `.safetensors`
 
-Это было прямое требование задания.
+Этот формат был нужен по условию задачи. Дополнительно он удобен тем, что чекпоинт хранится в одном файле вместе с метаданными, которые используются при загрузке модели для инференса.
 
-Плюс это nice format because:
-- safe loading
-- удобный export/import
-- просто хранить final artifact
+## Что еще учтено
 
-## Что еще важно
+- если в датасете уже есть готовые папки `train/val`, они сохраняются как есть;
+- если split не задан, создается стратифицированное разделение;
+- для внешней проверки есть отдельный скрипт, чтобы не смешивать ее с основной валидацией;
+- API вынесен отдельно и не влияет на train/eval-пайплайн.
 
-- comments в коде оставил короткие и only where they really help
-- split dataset сделан аккуратно: если в Kaggle dataset уже есть `train/val`, код их сохранит
-- если split нет, будет нормальный stratified split
-- внешний evaluation сделан отдельным script, чтобы показать именно real-world check
+## Что проверено локально
 
-## Что нужно сделать перед финальным GitHub push
+- `pytest`;
+- `python -m compileall app scripts tests`;
+- smoke-check основных частей пайплайна на синтетических данных.
 
-1. Скачать Kaggle dataset в `data/raw`
-2. Поставить зависимости
-3. Запустить `prepare_dataset.py`
-4. Запустить train
-5. Проверить `validation_report.json`
-6. Добавить 3-5 internet videos в `data/external_videos`
-7. Запустить external evaluation
-8. После реального train положить финальный `.safetensors` в repo
+Важно: это не финальный benchmark на реальном датасете. Итоговую точность имеет смысл оценивать только после полного запуска обучения и проверки на настоящих видео.
 
-## Что я уже реально проверил локально
+## Что осталось для полного результата
 
-- `pytest`:
-  `5 passed`
-- syntax smoke:
-  `python -m compileall app scripts tests`
-- model/runtime smoke:
-  создание `ViolenceVideoClassifier`
-- synthetic end-to-end smoke:
-  `prepare_dataset.py -> train.py -> evaluate.py -> evaluate_real_videos.py`
-
-Важно:
-- это был synthetic dataset smoke-check, not Kaggle final benchmark
-- итоговые `85%+` можно честно заявлять только после реального train/eval на настоящем датасете
-
-## If very short
-
-Repo already has:
-- structure
-- train code
-- eval code
-- export to `.safetensors`
-- optional API for demo
-
-What is left for final production-like result:
-- real dataset download
-- real training run
-- final metrics
-- final model artifact
+1. Скачать и разложить датасет в `data/raw`.
+2. Запустить подготовку манифестов.
+3. Запустить обучение.
+4. Проверить `validation_report.json`.
+5. Добавить 3-5 внешних видео в `data/external_videos`.
+6. Запустить `evaluate_real_videos.py`.
+7. Сохранить финальный `.safetensors` и итоговые метрики.

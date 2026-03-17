@@ -19,9 +19,9 @@ from app.labels import VIDEO_EXTENSIONS
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run inference on 3-5 real internet videos")
+    parser = argparse.ArgumentParser(description="Run inference on external videos")
     parser.add_argument("--model", default="artifacts/run_r3d18/best_model.safetensors", help="Path to .safetensors model")
-    parser.add_argument("--input-dir", default="data/external_videos", help="Directory with internet videos")
+    parser.add_argument("--input-dir", default="data/external_videos", help="Directory with videos to check")
     parser.add_argument("--output-prefix", default="artifacts/reports/real_videos", help="JSON/CSV output prefix")
     parser.add_argument("--device", default="auto", help="auto/cuda/mps/cpu")
     return parser.parse_args()

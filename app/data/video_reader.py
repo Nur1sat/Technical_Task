@@ -58,7 +58,7 @@ def sample_frame_indices(total_frames: int, num_frames: int, train: bool) -> lis
     if not train:
         return np.linspace(0, total_frames - 1, num=num_frames, dtype=int).tolist()
 
-    # small temporal jitter, but still cover whole clip end-to-end.
+    # Add temporal jitter but still cover the whole clip.
     span = total_frames / num_frames
     indices: list[int] = []
     for step in range(num_frames):
