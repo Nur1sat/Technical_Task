@@ -1,0 +1,22 @@
+{
+  "data_dir": "data/raw",
+  "train_manifest": "data/manifests/train.csv",
+  "val_manifest": "data/manifests/val.csv",
+  "output_dir": "artifacts/run_r3d18",
+  "backbone": "r3d_18",
+  "pretrained": true,
+  "dropout": 0.25,
+  "batch_size": 4,
+  "epochs": 12,
+  "freeze_backbone_epochs": 2,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.0001,
+  "num_workers": 0,
+  "num_frames": 16,
+  "image_size": 112,
+  "max_video_frames": 160,
+  "seed": 42,
+  "amp": true,
+  "device": "auto",
+  "max_grad_norm": 1.0
+}
